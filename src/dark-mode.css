@@ -1,0 +1,55 @@
+/* src/dark-mode.css - Direct CSS overrides */
+
+/* Dark mode overrides */
+.dark .dark\:bg-neutral-900 {
+  background-color: #171717 !important;
+}
+
+.dark .dark\:bg-neutral-800 {
+  background-color: #262626 !important;
+}
+
+.dark .dark\:bg-neutral-700 {
+  background-color: #404040 !important;
+}
+
+.dark .dark\:text-white {
+  color: white !important;
+}
+
+.dark .dark\:text-gray-300 {
+  color: #d4d4d4 !important;
+}
+
+.dark .dark\:text-neutral-300 {
+  color: #d4d4d4 !important;
+}
+
+.dark .dark\:text-emerald-400 {
+  color: #34d399 !important;
+}
+
+.dark .dark\:border-neutral-700 {
+  border-color: #404040 !important;
+}
+
+.dark .dark\:border-neutral-800 {
+  border-color: #262626 !important;
+}
+
+/* Light mode overrides */
+:not(.dark) .bg-white {
+  background-color: white !important;
+}
+
+:not(.dark) .text-neutral-900 {
+  color: #171717 !important;
+}
+
+:not(.dark) .text-neutral-700 {
+  color: #404040 !important;
+}
+
+:not(.dark) .border-gray-200 {
+  border-color: #e5e5e5 !important;
+}
