@@ -1,5 +1,8 @@
 <?php
+<<<<<<< HEAD
 // backend-php/utils/Response.php
+=======
+>>>>>>> 4421e0bae9061f07a2d9418e22845f10346fabd0
 
 if (!function_exists('sendResponse')) {
     function sendResponse($statusCode, $success, $message, $data = null) {

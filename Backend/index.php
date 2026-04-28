@@ -52,6 +52,7 @@ function handleRoute($route) {
         case 'bookings':
             require_once __DIR__ . '/routes/bookingRoutes.php';
             break;
+<<<<<<< HEAD
         case 'services':
             require_once __DIR__ . '/routes/serviceRoutes.php';
             break;
@@ -82,6 +83,9 @@ function handleRoute($route) {
         case 'health':
             sendResponse(200, true, 'Server is running', ['timestamp' => date('c')]);
             break;
+=======
+        
+>>>>>>> 4421e0bae9061f07a2d9418e22845f10346fabd0
         default:
             sendResponse(404, false, 'Endpoint not found', null);
             break;
