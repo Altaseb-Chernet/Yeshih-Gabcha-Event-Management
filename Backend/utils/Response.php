@@ -1,5 +1,4 @@
 <?php
-// backend-php/utils/Response.php
 
 if (!function_exists('sendResponse')) {
     function sendResponse($statusCode, $success, $message, $data = null) {
