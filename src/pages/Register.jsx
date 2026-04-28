@@ -343,6 +343,7 @@ const useValidation = (validations, formData) => {
 
   return {
     errors,
+    setErrors,
     touched,
     validateForm,
     handleBlur,
@@ -552,6 +553,7 @@ const Register = () => {
 
   const {
     errors,
+    setErrors,
     touched,
     validateForm,
     handleBlur,
@@ -584,7 +586,7 @@ const Register = () => {
         ? validationRules[name].filter(rule => !rule.$validator(value, newFormData))
         : [];
       
-      if (fieldErrors.length === 0) {
+      if (fieldErrors.length === 0 && setErrors) {
         setErrors(prev => {
           const newErrors = { ...prev };
           delete newErrors[name];
