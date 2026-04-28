@@ -1,1 +1,0 @@
-# Yeshih-Gabcha-Event-Management
