@@ -1,18 +1,18 @@
 openapi: 3.0.3
 info:
-  title: Habesha Event Management API
+  title: Yeshih Gabcha Event Management API
   description: |
-    Complete API documentation for the Habesha Event Management System.
+    Complete API documentation for the Yeshih Gabcha Event Management System.
     This API handles authentication, bookings, events, payments, gallery, services, and admin operations.
   version: 1.0.0
   contact:
     name: API Support
-    email: support@habesha-events.com
+    email: support@yeshih-gabcha-events.com
 
 servers:
   - url: http://localhost/api
     description: Local development server
-  - url: https://api.habesha-events.com/api
+  - url: https://api.yeshih-gabcha-events.com/api
     description: Production server
 
 tags:
