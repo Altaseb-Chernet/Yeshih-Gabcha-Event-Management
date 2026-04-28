@@ -1,47 +1,42 @@
 <?php
-// backend-php/utils/JwtUtils.php
+// utils/JwtUtils.php — Simple JWT encode/decode (no external library needed)
 
 class JwtUtils {
-    // Secret key for signing the token (Matches process.env.JWT_SECRET)
-    private static $secret = 'your_super_secret_key_12345'; // REPLACE THIS LATER!
 
-    public static function generateToken($payload) {
-        $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
-        $payload = json_encode($payload);
-
-        $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
-        $base64UrlPayload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($payload));
-
-        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, self::$secret, true);
-        $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
-
-        return $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
+    private static function getSecret(): string {
+        global $config;
+        return $config['jwt']['accessSecret'] ?? 'fallback_secret_change_me';
     }
 
-    public static function validateToken($token) {
+    public static function generateToken(array $payload): string {
+        $header  = self::base64url(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+        $payload = self::base64url(json_encode($payload));
+        $sig     = self::base64url(hash_hmac('sha256', "$header.$payload", self::getSecret(), true));
+        return "$header.$payload.$sig";
+    }
+
+    public static function validateToken(string $token): ?array {
         $parts = explode('.', $token);
+        if (count($parts) !== 3) return null;
 
-        if (count($parts) !== 3) {
-            return false;
-        }
+        [$header, $payload, $sig] = $parts;
+        $expected = self::base64url(hash_hmac('sha256', "$header.$payload", self::getSecret(), true));
 
-        $header = $parts[0];
-        $payload = $parts[1];
-        $signatureProvided = $parts[2];
+        if (!hash_equals($expected, $sig)) return null;
 
-        $signatureExpected = hash_hmac('sha256', $header . "." . $payload, self::$secret, true);
-        $base64UrlSignatureExpected = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signatureExpected));
+        $data = json_decode(self::base64urlDecode($payload), true);
+        if (!$data) return null;
 
-        if (hash_equals($base64UrlSignatureExpected, $signatureProvided)) {
-            $payloadData = json_decode(base64_decode(str_replace(['-', '_'], ['+', '/'], $payload)));
-            
-            if (isset($payloadData->exp) && $payloadData->exp < time()) {
-                return false; // Token expired
-            }
-            return $payloadData;
-        }
+        if (isset($data['exp']) && $data['exp'] < time()) return null;
 
-        return false;
+        return $data;
+    }
+
+    private static function base64url(string $data): string {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+
+    private static function base64urlDecode(string $data): string {
+        return base64_decode(strtr($data, '-_', '+/') . str_repeat('=', (4 - strlen($data) % 4) % 4));
     }
 }
-?>
