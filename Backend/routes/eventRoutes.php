@@ -1,46 +1,50 @@
 <?php
+// routes/eventRoutes.php
+// GET    /events
+// GET    /events/{id}
+// POST   /events/{id}/proceed-payment
+// POST   /events
+// PUT    /events/{id}
+// DELETE /events/{id}
 
 require_once __DIR__ . '/../controllers/EventController.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
+$seg1   = $segments[1] ?? '';   // {id}
+$seg2   = $segments[2] ?? '';   // proceed-payment
 
-global $segments;
-$id = $segments[1] ?? null;
+switch (true) {
 
-switch ($method) {
-
-    case 'GET':
-        if ($id) {
-            EventController::getEventById($id);
-        } else {
-            EventController::getEvents();
-        }
+    // POST /events/{id}/proceed-payment
+    case $method === 'POST' && $seg1 !== '' && $seg2 === 'proceed-payment':
+        EventController::proceedPayment($seg1);
         break;
 
-    case 'POST':
-        if (!$id) {
-            EventController::createEvent();
-        } else {
-            sendResponse(404, false, "Endpoint not found");
-        }
+    // GET /events/{id}
+    case $method === 'GET' && $seg1 !== '':
+        EventController::getById($seg1);
         break;
 
-    case 'PUT':
-        if ($id) {
-            EventController::updateEvent($id);
-        } else {
-            sendResponse(400, false, "Event ID required");
-        }
+    // GET /events
+    case $method === 'GET':
+        EventController::getAll();
         break;
 
-    case 'DELETE':
-        if ($id) {
-            EventController::deleteEvent($id);
-        } else {
-            sendResponse(400, false, "Event ID required");
-        }
+    // POST /events
+    case $method === 'POST' && $seg1 === '':
+        EventController::create();
+        break;
+
+    // PUT /events/{id}
+    case $method === 'PUT' && $seg1 !== '':
+        EventController::update($seg1);
+        break;
+
+    // DELETE /events/{id}
+    case $method === 'DELETE' && $seg1 !== '':
+        EventController::delete($seg1);
         break;
 
     default:
-        sendResponse(405, false, "Method not allowed");
+        sendResponse(404, false, 'Event endpoint not found');
 }
