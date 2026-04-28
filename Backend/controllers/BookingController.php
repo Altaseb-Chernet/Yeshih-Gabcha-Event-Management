@@ -1,5 +1,5 @@
 <?php
-// backend-php/controllers/BookingController.php
+
 
 require_once __DIR__ . '/../models/Booking.php';
 require_once __DIR__ . '/../models/Event.php';
@@ -27,7 +27,7 @@ class BookingController {
                 sendResponse(404, false, "Event not found.");
             }
             
-            // TODO: Ideally check event capacity here to prevent overbooking
+            
             
             $booking->user_id = $user->id;
             $booking->event_id = $data->event_id;
@@ -62,7 +62,7 @@ class BookingController {
     }
     
     // GET /bookings/event/:eventId
-    // Needs to be an admin or the event organizer
+    
     public static function getEventBookings($eventId) {
         $user = authenticate();
         
