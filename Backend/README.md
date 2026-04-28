@@ -4,13 +4,6 @@ This folder contains the backend of the **Yeshih-Gabcha Event Management System*
 
 ---
 
-## Project Status
-
-⚠️ This backend is still in progress.
-Some features may be incomplete or subject to change.
-
----
-
 ## Overview
 
 The backend will handle:
