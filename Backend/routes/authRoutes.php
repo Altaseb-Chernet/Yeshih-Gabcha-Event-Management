@@ -1,27 +1,44 @@
 <?php
-// backend-php/routes/authRoutes.php
-
+// routes/authRoutes.php
 require_once __DIR__ . '/../controllers/AuthController.php';
 
-// Method Checking
-$method = $_SERVER['REQUEST_METHOD'];
+$method   = $_SERVER['REQUEST_METHOD'];
+$endpoint = $segments[1] ?? '';          // auth/{endpoint}
+$sub      = $segments[2] ?? '';          // auth/2fa/{sub}
 
-// Route Segments
-// For url: index.php?route=auth/login
-// $segments = ['auth', 'login']
-$endpoint = isset($segments[1]) ? $segments[1] : '';
-
-if ($method === 'POST') {
-    if ($endpoint === 'register') {
+switch (true) {
+    case $method === 'POST' && $endpoint === 'register':
         AuthController::register();
-    } elseif ($endpoint === 'login') {
+        break;
+
+    case $method === 'POST' && $endpoint === 'login':
         AuthController::login();
-    } else {
-        http_response_code(404);
-        echo json_encode(["message" => "Endpoint not found"]);
-    }
-} else {
-    http_response_code(405);
-    echo json_encode(["message" => "Method not allowed"]);
+        break;
+
+    case $method === 'POST' && $endpoint === '2fa' && $sub === 'verify':
+        AuthController::verifyTwoFactor();
+        break;
+
+    case $method === 'POST' && $endpoint === '2fa' && $sub === 'enable':
+        AuthController::enableTwoFactor();
+        break;
+
+    case $method === 'POST' && $endpoint === '2fa' && $sub === 'disable':
+        AuthController::disableTwoFactor();
+        break;
+
+    case $method === 'POST' && $endpoint === 'change-password':
+        AuthController::changePassword();
+        break;
+
+    case $method === 'POST' && $endpoint === 'resend-verification':
+        AuthController::resendVerification();
+        break;
+
+    case $method === 'GET' && $endpoint === 'verify-email':
+        AuthController::verifyEmail();
+        break;
+
+    default:
+        sendResponse(404, false, 'Auth endpoint not found');
 }
-?>

@@ -1,52 +1,43 @@
 <?php
-// backend-php/middleware/AuthMiddleware.php
+// middleware/AuthMiddleware.php
 
 require_once __DIR__ . '/../utils/JwtUtils.php';
 require_once __DIR__ . '/../utils/Response.php';
 
 class AuthMiddleware {
-    public static function authenticate() {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
 
+    public static function authenticate(): array {
         $headers = function_exists('getallheaders') ? getallheaders() : [];
-        if (empty($headers) && function_exists('apache_request_headers')) {
-            $headers = apache_request_headers();
+        $auth    = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+
+        if (empty($auth)) {
+            sendResponse(401, false, 'No token provided');
         }
 
-        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
-        if (empty($authHeader)) {
-            sendResponse(401, false, 'Not authorized, no token provided');
-        }
-
-        $token = trim(str_replace('Bearer', '', $authHeader));
+        $token   = trim(str_replace('Bearer', '', $auth));
         $decoded = JwtUtils::validateToken($token);
 
         if (!$decoded) {
-            sendResponse(401, false, 'Not authorized, token failed or expired');
+            sendResponse(401, false, 'Invalid or expired token');
         }
 
-        $user = is_object($decoded) ? (array)$decoded : $decoded;
-        $_SESSION['user'] = $user;
-        return $user;
+        return $decoded;
     }
 
-    public static function authorizeRoles(...$roles) {
+    public static function authorizeRoles(string ...$roles): array {
         $user = self::authenticate();
-        if (!in_array($user['role'] ?? null, $roles, true)) {
-            sendResponse(403, false, 'Forbidden: Insufficient privileges');
+        if (!in_array($user['role'] ?? '', $roles, true)) {
+            sendResponse(403, false, 'Forbidden: insufficient privileges');
         }
         return $user;
     }
 }
 
-// Backward-compatible helpers.
-function authenticate() {
+// Shorthand helpers used in route files
+function authenticate(): array {
     return AuthMiddleware::authenticate();
 }
 
-function authorizeRoles(...$roles) {
-    return AuthMiddleware::authorizeRoles(...$roles);
+function authorizeAdmin(): array {
+    return AuthMiddleware::authorizeRoles('admin');
 }
-?>
