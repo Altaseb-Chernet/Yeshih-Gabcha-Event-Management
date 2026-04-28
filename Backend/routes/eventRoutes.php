@@ -1,40 +1,50 @@
 <?php
+// routes/eventRoutes.php
+// GET    /events
+// GET    /events/{id}
+// POST   /events/{id}/proceed-payment
+// POST   /events
+// PUT    /events/{id}
+// DELETE /events/{id}
 
 require_once __DIR__ . '/../controllers/EventController.php';
 
-// Method Checking
 $method = $_SERVER['REQUEST_METHOD'];
+$seg1   = $segments[1] ?? '';   // {id}
+$seg2   = $segments[2] ?? '';   // proceed-payment
 
-// Route Segments
-// For url: index.php?route=events or index.php?route=events/1
-// $segments = ['events', '1']
-$id = isset($segments[1]) ? $segments[1] : null;
+switch (true) {
 
-if ($method === 'GET') {
-    if ($id) {
-        EventController::getEventById($id);
-    } else {
-        EventController::getEvents();
-    }
-} elseif ($method === 'POST') {
-    if (!$id) {
-        EventController::createEvent();
-    } else {
-        sendResponse(404, false, "Endpoint not found");
-    }
-} elseif ($method === 'PUT') {
-    if ($id) {
-        EventController::updateEvent($id);
-    } else {
-        sendResponse(400, false, "Event ID required");
-    }
-} elseif ($method === 'DELETE') {
-    if ($id) {
-        EventController::deleteEvent($id);
-    } else {
-        sendResponse(400, false, "Event ID required");
-    }
-} else {
-    sendResponse(405, false, "Method not allowed");
+    // POST /events/{id}/proceed-payment
+    case $method === 'POST' && $seg1 !== '' && $seg2 === 'proceed-payment':
+        EventController::proceedPayment($seg1);
+        break;
+
+    // GET /events/{id}
+    case $method === 'GET' && $seg1 !== '':
+        EventController::getById($seg1);
+        break;
+
+    // GET /events
+    case $method === 'GET':
+        EventController::getAll();
+        break;
+
+    // POST /events
+    case $method === 'POST' && $seg1 === '':
+        EventController::create();
+        break;
+
+    // PUT /events/{id}
+    case $method === 'PUT' && $seg1 !== '':
+        EventController::update($seg1);
+        break;
+
+    // DELETE /events/{id}
+    case $method === 'DELETE' && $seg1 !== '':
+        EventController::delete($seg1);
+        break;
+
+    default:
+        sendResponse(404, false, 'Event endpoint not found');
 }
-?>

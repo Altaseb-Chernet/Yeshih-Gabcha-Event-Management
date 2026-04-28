@@ -1,127 +1,137 @@
 <?php
-// backend-php/models/Event.php
+// models/Event.php — matches events table
 
 class Event {
-    private $conn;
-    private $table_name = "events";
+    private PDO $conn;
+    private string $table = 'events';
 
-    public $id;
-    public $title;
-    public $description;
-    public $date;
-    public $location;
-    public $capacity;
-    public $price;
-    public $created_by;
-    public $created_at;
-
-    public function __construct($db) {
+    public function __construct(PDO $db) {
         $this->conn = $db;
     }
 
-    // Read all events
-    public function read() {
-        $query = "SELECT * FROM " . $this->table_name . " ORDER BY date DESC";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt;
+    public function create(array $data): array {
+        $id  = $this->uuid();
+        $sql = "INSERT INTO {$this->table}
+                    (id, title, description, eventType, location, latitude, longitude,
+                     eventDate, eventTime, ticketPrice, totalTickets, imageUrl, status)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+        $this->conn->prepare($sql)->execute([
+            $id,
+            $data['title'],
+            $data['description']  ?? null,
+            $data['eventType']    ?? 'other',
+            $data['location']     ?? null,
+            $data['latitude']     ?? null,
+            $data['longitude']    ?? null,
+            $data['eventDate'],
+            $data['eventTime'],
+            $data['ticketPrice'],
+            $data['totalTickets'] ?? null,
+            $data['imageUrl']     ?? null,
+            $data['status']       ?? 'active',
+        ]);
+
+        return $this->findById($id);
     }
 
-    // Read single event
-    public function readSingle() {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE id = ? LIMIT 0,1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(1, $this->id);
-        $stmt->execute();
-
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if($row) {
-            $this->title = $row['title'];
-            $this->description = $row['description'];
-            $this->date = $row['date'];
-            $this->location = $row['location'];
-            $this->capacity = $row['capacity'];
-            $this->price = $row['price'];
-            $this->created_by = $row['created_by'];
-            return true;
+    public function findById(string $id): ?array {
+        $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE id = ? LIMIT 1");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+        if ($row) {
+            $row['remainingTickets'] = $row['totalTickets'] !== null
+                ? max(0, $row['totalTickets'] - $row['soldTickets'])
+                : null;
         }
-        return false;
+        return $row ?: null;
     }
 
-    // Create event
-    public function create() {
-        $query = "INSERT INTO " . $this->table_name . " 
-                  SET title=:title, description=:description, date=:date, 
-                      location=:location, capacity=:capacity, price=:price, created_by=:created_by";
+    public function getAll(int $limit = 20, int $offset = 0, array $filters = []): array {
+        $where  = ['1=1'];
+        $params = [];
 
-        $stmt = $this->conn->prepare($query);
-
-        // sanitize
-        $this->title=htmlspecialchars(strip_tags($this->title));
-        $this->description=htmlspecialchars(strip_tags($this->description));
-        $this->date=htmlspecialchars(strip_tags($this->date));
-        $this->location=htmlspecialchars(strip_tags($this->location));
-        $this->capacity=htmlspecialchars(strip_tags($this->capacity));
-        $this->price=htmlspecialchars(strip_tags($this->price));
-        $this->created_by=htmlspecialchars(strip_tags($this->created_by));
-
-        // bind data
-        $stmt->bindParam(":title", $this->title);
-        $stmt->bindParam(":description", $this->description);
-        $stmt->bindParam(":date", $this->date);
-        $stmt->bindParam(":location", $this->location);
-        $stmt->bindParam(":capacity", $this->capacity);
-        $stmt->bindParam(":price", $this->price);
-        $stmt->bindParam(":created_by", $this->created_by);
-
-        if($stmt->execute()) {
-            return true;
+        if (!empty($filters['status'])) {
+            $where[] = 'status = ?';
+            $params[] = $filters['status'];
         }
-        return false;
+        if (!empty($filters['eventType'])) {
+            $where[] = 'eventType = ?';
+            $params[] = $filters['eventType'];
+        }
+        if (!empty($filters['search'])) {
+            $where[] = '(title LIKE ? OR description LIKE ?)';
+            $s = '%' . $filters['search'] . '%';
+            array_push($params, $s, $s);
+        }
+
+        $sql = "SELECT * FROM {$this->table} WHERE " . implode(' AND ', $where)
+             . " ORDER BY eventDate ASC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        foreach ($rows as &$row) {
+            $row['remainingTickets'] = $row['totalTickets'] !== null
+                ? max(0, $row['totalTickets'] - $row['soldTickets'])
+                : null;
+        }
+        return $rows;
     }
 
-    // Update event
-    public function update() {
-        $query = "UPDATE " . $this->table_name . " 
-                  SET title=:title, description=:description, date=:date, 
-                      location=:location, capacity=:capacity, price=:price 
-                  WHERE id = :id";
+    public function countAll(array $filters = []): int {
+        $where  = ['1=1'];
+        $params = [];
+        if (!empty($filters['status'])) { $where[] = 'status = ?'; $params[] = $filters['status']; }
 
-        $stmt = $this->conn->prepare($query);
-
-        $this->title=htmlspecialchars(strip_tags($this->title));
-        $this->description=htmlspecialchars(strip_tags($this->description));
-        $this->date=htmlspecialchars(strip_tags($this->date));
-        $this->location=htmlspecialchars(strip_tags($this->location));
-        $this->capacity=htmlspecialchars(strip_tags($this->capacity));
-        $this->price=htmlspecialchars(strip_tags($this->price));
-        $this->id=htmlspecialchars(strip_tags($this->id));
-
-        $stmt->bindParam(":title", $this->title);
-        $stmt->bindParam(":description", $this->description);
-        $stmt->bindParam(":date", $this->date);
-        $stmt->bindParam(":location", $this->location);
-        $stmt->bindParam(":capacity", $this->capacity);
-        $stmt->bindParam(":price", $this->price);
-        $stmt->bindParam(":id", $this->id);
-
-        if($stmt->execute()) {
-            return true;
-        }
-        return false;
+        $stmt = $this->conn->prepare(
+            "SELECT COUNT(*) FROM {$this->table} WHERE " . implode(' AND ', $where)
+        );
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
     }
 
-    // Delete event
-    public function delete() {
-        $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";
-        $stmt = $this->conn->prepare($query);
-        $this->id=htmlspecialchars(strip_tags($this->id));
-        $stmt->bindParam(1, $this->id);
-        
-        if($stmt->execute()) {
-            return true;
+    public function update(string $id, array $data): ?array {
+        $allowed = ['title','description','eventType','location','latitude','longitude',
+                    'eventDate','eventTime','ticketPrice','totalTickets','imageUrl','status'];
+        $fields  = [];
+        $values  = [];
+
+        foreach ($data as $k => $v) {
+            if (in_array($k, $allowed, true)) {
+                $fields[] = "$k = ?";
+                $values[] = $v;
+            }
         }
-        return false;
+        if (empty($fields)) return $this->findById($id);
+
+        $values[] = $id;
+        $this->conn->prepare(
+            "UPDATE {$this->table} SET " . implode(', ', $fields) . " WHERE id = ?"
+        )->execute($values);
+
+        return $this->findById($id);
+    }
+
+    public function delete(string $id): bool {
+        $stmt = $this->conn->prepare("DELETE FROM {$this->table} WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
+
+    public function incrementSold(string $id): bool {
+        $stmt = $this->conn->prepare(
+            "UPDATE {$this->table} SET soldTickets = soldTickets + 1 WHERE id = ?"
+        );
+        return $stmt->execute([$id]);
+    }
+
+    private function uuid(): string {
+        return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0,0xffff), mt_rand(0,0xffff), mt_rand(0,0xffff),
+            mt_rand(0,0x0fff)|0x4000, mt_rand(0,0x3fff)|0x8000,
+            mt_rand(0,0xffff), mt_rand(0,0xffff), mt_rand(0,0xffff));
     }
 }
-?>
