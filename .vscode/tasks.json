@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Frontend: dev server (Frontend folder)",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"Set-Location \"C:\\xampp\\htdocs\\Yeshigabcha_EMS\\Yeshih-Gabcha-Event-Management\\Frontend\"; npm run dev"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}
