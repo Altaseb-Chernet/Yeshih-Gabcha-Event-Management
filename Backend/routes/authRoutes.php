@@ -39,6 +39,14 @@ switch (true) {
         AuthController::verifyEmail();
         break;
 
+    case $method === 'POST' && $endpoint === 'forgot-password':
+        AuthController::forgotPassword();
+        break;
+
+    case $method === 'POST' && $endpoint === 'reset-password':
+        AuthController::resetPassword();
+        break;
+
     default:
         sendResponse(404, false, 'Auth endpoint not found');
 }

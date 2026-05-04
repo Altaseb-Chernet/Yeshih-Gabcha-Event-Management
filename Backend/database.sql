@@ -30,6 +30,8 @@ CREATE TABLE users (
     twoFactorEnabled    TINYINT(1) NOT NULL DEFAULT 0,
     twoFactorSecret     VARCHAR(255),
     twoFactorTempToken  VARCHAR(255),
+    passwordResetOtp       VARCHAR(255),
+    passwordResetOtpExpiry DATETIME,
     createdAt    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updatedAt    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

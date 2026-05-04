@@ -4,6 +4,7 @@
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../utils/JwtUtils.php';
 require_once __DIR__ . '/../utils/Response.php';
+require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 
 class AuthController {
 
@@ -194,6 +195,81 @@ class AuthController {
         ]);
 
         sendResponse(200, true, 'Email verified successfully');
+    }
+
+    // POST /auth/forgot-password
+    // Body: { email }
+    // Generates a 6-digit OTP and stores it (hashed) on the user row.
+    // In production you would email the OTP; here we return it in the response
+    // only in non-production environments so the frontend can test without SMTP.
+    public static function forgotPassword(): void {
+        global $conn;
+        $d = self::json();
+
+        if (empty($d['email'])) {
+            sendResponse(400, false, 'email is required');
+        }
+
+        $model = new User($conn);
+        $user  = $model->findByEmail($d['email']);
+
+        // Always respond 200 to avoid email enumeration
+        if (!$user) {
+            sendResponse(200, true, 'If the email exists, an OTP has been sent');
+        }
+
+        // Generate a 6-digit OTP and store its hash with a 15-minute expiry
+        $otp       = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $otpHash   = password_hash($otp, PASSWORD_DEFAULT);
+        $expiresAt = date('Y-m-d H:i:s', time() + 900); // 15 minutes
+
+        $model->update($user['id'], [
+            'passwordResetOtp'       => $otpHash,
+            'passwordResetOtpExpiry' => $expiresAt,
+        ]);
+
+        // TODO: send $otp via email using SMTP config
+        // For development, include the OTP in the response so it can be tested
+        // without a working SMTP server. Remove this in production.
+        global $config;
+        $isDev = ($config['app']['env'] ?? 'development') !== 'production';
+
+        sendResponse(200, true, 'If the email exists, an OTP has been sent', $isDev ? ['otp' => $otp] : null);
+    }
+
+    // POST /auth/reset-password
+    // Body: { email, otp, newPassword }
+    public static function resetPassword(): void {
+        global $conn;
+        $d = self::json();
+
+        foreach (['email', 'otp', 'newPassword'] as $f) {
+            if (empty($d[$f])) sendResponse(400, false, "Field '$f' is required");
+        }
+
+        $model = new User($conn);
+        $user  = $model->findByEmail($d['email']);
+
+        if (!$user) sendResponse(400, false, 'Invalid or expired OTP');
+
+        // Check OTP expiry
+        if (empty($user['passwordResetOtpExpiry']) || strtotime($user['passwordResetOtpExpiry']) < time()) {
+            sendResponse(400, false, 'OTP has expired. Please request a new one.');
+        }
+
+        // Verify OTP
+        if (empty($user['passwordResetOtp']) || !password_verify($d['otp'], $user['passwordResetOtp'])) {
+            sendResponse(400, false, 'Invalid OTP');
+        }
+
+        // Update password and clear OTP fields
+        $model->updatePassword($user['id'], $d['newPassword']);
+        $model->update($user['id'], [
+            'passwordResetOtp'       => null,
+            'passwordResetOtpExpiry' => null,
+        ]);
+
+        sendResponse(200, true, 'Password reset successfully');
     }
 
     // ── Helpers ───────────────────────────────────────────────

@@ -67,7 +67,8 @@ class User {
     public function update(string $id, array $data): ?array {
         $allowed = ['firstName','lastName','phone','profileImage','status','role',
                     'emailVerified','emailVerifyToken','twoFactorEnabled',
-                    'twoFactorSecret','twoFactorTempToken'];
+                    'twoFactorSecret','twoFactorTempToken',
+                    'passwordResetOtp','passwordResetOtpExpiry'];
 
         $fields = [];
         $values = [];
@@ -139,7 +140,8 @@ class User {
     // ── Safe public fields (strip passwordHash) ───────────────
     public static function safe(array $user): array {
         unset($user['passwordHash'], $user['emailVerifyToken'],
-              $user['twoFactorSecret'], $user['twoFactorTempToken']);
+              $user['twoFactorSecret'], $user['twoFactorTempToken'],
+              $user['passwordResetOtp'], $user['passwordResetOtpExpiry']);
         return $user;
     }
 

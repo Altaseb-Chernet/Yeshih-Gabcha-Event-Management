@@ -26,6 +26,29 @@ const getBaseUrl = () => {
   return base && typeof base === 'string' ? base.replace(/\/$/, '') : '/api'
 }
 
+/**
+ * Build a full URL for a backend-uploaded file.
+ * Pass the relative path returned by the API (e.g. "uploads/profiles/avatar.png")
+ * and get back a URL that works in both dev (proxied) and production.
+ *
+ * Examples:
+ *   getUploadUrl('uploads/profiles/avatar.png')  → '/uploads/profiles/avatar.png'
+ *   getUploadUrl('/uploads/profiles/avatar.png') → '/uploads/profiles/avatar.png'
+ *   getUploadUrl(null)                           → ''
+ */
+export const getUploadUrl = (path) => {
+  if (!path) return ''
+  // If the backend already returns a full URL, use it as-is
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
+
+  const uploadsBase = import.meta.env?.VITE_UPLOADS_BASE_URL || '/uploads'
+  const base = uploadsBase.replace(/\/$/, '')
+
+  // Strip leading "uploads/" prefix if present so we don't double it
+  const clean = path.replace(/^\/?(uploads\/)?/, '')
+  return `${base}/${clean}`
+}
+
 const request = async (method, path, body, options = {}) => {
   const baseUrl = getBaseUrl()
   const url = `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`

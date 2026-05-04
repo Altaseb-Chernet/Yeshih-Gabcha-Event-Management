@@ -1,10 +1,11 @@
-import api from '../utils/api'
+// dashboard.js — Admin dashboard data via the /reports endpoints
+// The backend does not have a /dashboard resource; all dashboard
+// metrics are served through /reports/admin/dashboard/metrics
+import api from '../utils/api.js'
 
-// GET /api/dashboard/jobseeker
-export const getJobSeekerDashboard = () => api.get('/dashboard/jobseeker')
+// GET /reports/admin/dashboard/metrics
+// Returns: totalUsers, totalBookings, totalRevenue, pendingBookings, etc.
+export const getAdminDashboard = () => api.get('/reports/admin/dashboard/metrics')
 
-// GET /api/dashboard/employer
-export const getEmployerDashboard = () => api.get('/dashboard/employer')
-
-// GET /api/dashboard/admin
-export const getAdminDashboard = () => api.get('/dashboard/admin')
+// Kept for backwards-compatibility — both resolve to the same endpoint
+export const getAdminDashboardMetrics = getAdminDashboard

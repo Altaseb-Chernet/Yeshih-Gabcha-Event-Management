@@ -50,4 +50,7 @@ $config = [
     'cors' => [
         'origin' => Config::get('FRONTEND_URL', '*'),
     ],
+    'app' => [
+        'env' => Config::get('APP_ENV', 'development'),
+    ],
 ];
